@@ -1,4 +1,4 @@
-# McEliceMethod
+# McEliceMethod (decodaj Gallagher)
 
 ## TODO
 - clean code (make functions)
