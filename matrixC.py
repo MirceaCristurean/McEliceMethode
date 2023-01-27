@@ -1,6 +1,7 @@
 from random import shuffle, randrange
 import numpy as np
 from time import time
+import matplotlib.pyplot as plt
 
 
 def randomMatrix(rows, columns):
@@ -97,7 +98,7 @@ def rref(A):
 time_spent = time()
 timeout = time() + 2  # seconds for timeout
 n = 20  # coloane
-k = 10   # n-k randuris
+k = 10   # n-k randuri
 w = 5  # numar de 1 pe linie
 
 H = matrixH(n-k, n, w)
@@ -127,12 +128,13 @@ def remove_duplicates_rows(H):
 
 def encrypt(H):
     Hsys, jb, LCS = rref(np.copy(H))
+    k, n = H.shape
     Hperm = np.copy(H)
     for index in reversed(LCS):
         Hperm = np.delete(Hperm, index, 1)
     for index in LCS:
         Hperm = np.concatenate((Hperm, np.vstack(Hperm[:, index])), axis=1)
-    G = np.zeros((k, n), dtype="bool")
+    #G = np.zeros((H.shape), dtype="bool")
     G = np.concatenate(
         (np.transpose(Hsys[:, n-k:n]), np.identity(k, dtype="bool")), axis=1)
     x = np.dot(G*(-1), np.transpose(Hsys*1))
@@ -158,9 +160,25 @@ def encrypt(H):
         break  # the loop after {timeout} amount of seconds
     print(f"Time spent: {time()-time_spent} seconds")
     return y
-    print(y*1)
 
 
-encrypted_message = encrypt(H)
+#encrypted_message = encrypt(H)
 
 # def decrypt(message)
+w = 5
+n_values = [100, 150, 200, 500, 800, 1000, 2000, 3000, 4000, 5000, 10000]
+times = []
+
+for n in n_values:
+    start = time()
+    H = matrixH(round(n/2), n, w)
+    encrypt(H)
+    end = time()
+    times.append(end - start)
+    print("n:", n, "time:", end - start)
+
+plt.plot(n_values, times)
+plt.xlabel('n values')
+plt.ylabel('Running time (seconds)')
+plt.title('Running time')
+plt.show()
