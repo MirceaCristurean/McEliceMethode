@@ -1,15 +1,50 @@
+'''
+This file contains the implementation of encrypt and decrypt a message using 2 methods: McEliece cryptosystem (encrypt, decrpyt)
+and Gallagher for decrypt.
+All users in a McEliece deployment share a set of common security parameters: n,k,t
+There are some predefined steps: 
+    1. Key generation;
+    2. Message encryption;
+    3. Message decryption.
+
+After running this code, we obtained a figure (Figure_1.png, please see Docs section of this repository) which perfectly displays an overview 
+of the methods' performance.
+
+Note: This method is a post-quantum encryption candidate. A variant of this algorithm combined with NTS-KEM was entered into and selected
+        during the third round of the NIST post-quantum encryption competition.
+
+
+References: 
+    1. McEliece, Robert J. (1978). "A Public-Key Cryptosystem Based on Algebraic Coding Theory" (PDF)
+     DSN Progress Report. 44: 114-116 (see in Docs section)
+    2. Classic McEliece Team (23 October 2022)  "Classic McEliece: conservative code-based cryptography: cryptosystem specification" 
+    (PDF). Round 4 NIST Submission Overview. (https://classic.mceliece.org/ )
+    3. http://www.infocobuild.com/education/audio-video-courses/electronics/ErrorCorrectingCodes-IISc-Bangalore/lecture-31.html 
+    4. https://github.com/megabug/gallagher-research/blob/master/README.md 
+'''
+__author__ = "Alexandru Brezan", "Mircea Cristurean"
+__version__ = 1.0
+__project__ = "Encrypt and decrypt using McEliece and Gallagher methods"
+__file__ = "matrixF.py"
+
 import numpy as np
 from random import shuffle, randrange
 from time import time
 import matplotlib.pyplot as plt
 
-# Generate a random binary matrix for the public key
-# def generate_public_key(n, k):
-#     G = np.random.randint(2, size=(k, n))
-#     return G
+
 def generate_public_key(columns, rows):
+    ''' The generate_public_key generates a random binary matrix for the public key
+
+        :param int columns: defines number of columns for the generated public key
+            :example: 34
+        :param int rows: defines numer of row for the generated public key
+            :example 34
+
+        :return ndarray matrix: the matrix obtained for the public key
+     '''
     w = 5
-    # initializare matrice cu zero binar
+    # initializing with 0 (binary)
     matrix = np.zeros((rows, columns), dtype='bool')
     for index in range(0, rows):
         new_row = [True]*w+[False]*(columns-w)
@@ -17,22 +52,40 @@ def generate_public_key(columns, rows):
         matrix[index] = list(new_row)
     return matrix*1
 
-# Generate the private key using the public key
+
 def generate_private_key(G):
+    ''' The generate_private_key generates a private key using the public key passed as parameter
+
+        :param any G: its the matrix obtained from generate_public_key method
+            :example: generate_private_key(generate_public_key(34, 34))
+
+        :return any B_inv: the private key
+     '''
     # Compute the rank of G
     rank_G = np.linalg.matrix_rank(G)
     rows, columns = G.shape
     # Select a subset of rows from G that form a basis for the row space of G
-    #B = G[:rank_G, :]
-    #print(G)
+    # B = G[:rank_G, :]
+    # print(G)
     R, order, LCS = rref(G)
     B = R[:, rows:]
     # Compute the inverse of B
     B_inv = np.linalg.inv(B)
     return B_inv
 
-# Calculate the row echelon form of the generator matrix
+
 def rref(A):
+    '''
+        The rref method is an abreviation from Reduced Row Echelon Form. It is used to obtain the desired form
+        of the generator matrix.
+
+        :param any A: the matrix passed to be manipulated for obtaining Reduced Row Echelon Form
+            :example generate_public_key(34, 34)
+
+        :return A*1: the matrix obtained
+        :return list jb
+        :return list LCS
+    '''
     m, n = A.shape
     i, j = 0, 0
     jb = []
@@ -65,14 +118,35 @@ def rref(A):
             A[j, :] = np.logical_xor(A[j, :], A[i, :])
     return A*1, jb, LCS
 
+
 def randomVector(length, w):
-    #rand = randrange(0, length+1)
+    '''
+        This method generates a random vector used in McEliece method as error vector for encrypting
+
+        :param int length: the length of the generated vector
+            :example: 10
+        :param int w
+            :example: 10
+
+        :return np.array(arr, dtype= 'bool'): the obatined vector
+    '''
+    # rand = randrange(0, length+1)
     arr = [True]*w+[False]*(length-w)
     shuffle(arr)
     return np.array(arr, dtype='bool')
 
-# Encrypt the message using the public key
+
 def encrypt(message, G):
+    '''
+        The encrypt method, generates the ciphertext, using McEliece method of encryption
+
+        :param any meesage: the message to be encrypted
+            :example: 9865443211
+        :param ndarray G: the matrix which is the public key used for encryption
+            :example: generate_public_key(34, 34)
+
+        :return ndarray ciphertext: the ecnrypted message using McEliece method, called ciphertext
+    '''
     # Convert the message to a binary array
     message = np.array([int(x) for x in '{0:b}'.format(message)])
     print(message, "message")
@@ -80,12 +154,23 @@ def encrypt(message, G):
     e = np.random.randint(2, size=len(G[0]))
     e = randomVector(len(G[0]), 10)
     # Compute the ciphertext
-    #ciphertext = message.dot(G) + e
+    # ciphertext = message.dot(G) + e
     ciphertext = np.array(G@e, dtype='bool')
     return ciphertext*1
 
-# Decrypt the ciphertext using the private key
+
 def decrypt(ciphertext, B_inv):
+    '''
+        The decrypt method is the McEliece method to decrypt the received message using the received ciphertext
+        and the private key
+
+        :param ndarray ciphertext: the encrypted messaged received
+            :example: encrypt(9865443211,generate_public_key(34,34)) 
+        :param ndarrat B_inv: the matrix used for decrypt (the private key)
+            :example: generate_private_key(generate_public_key(34, 34))
+
+        :return int message: the decrypted message
+    '''
     # Compute the original message
     message = ciphertext.dot(B_inv) % 2
     # Convert the message to an integer
@@ -94,11 +179,23 @@ def decrypt(ciphertext, B_inv):
 
 
 def decode_gallagher(ciphertext, B_inv, t):
+    '''
+        The decode_gallagher method is another decryption method which we decided to use
+
+        :param ndarray ciphertext: the encrypted message received
+            :example: encrypt(9865443211,generate_public_key(34,34)) 
+        :param ndarray B_inv: the private key
+            :example:  public_key*-1
+        :param int t: the weight
+            :example: 2
+
+        :return np.array(ciphertext + e % 2, dtype='bool')*1 : the decrypted message using Gallager method
+    '''
     n = len(B_inv[0])
     k = len(B_inv)
     # Compute the syndrome of the ciphertext
-    #syndrome = ciphertext.dot(B_inv.T) % 2
-    syndrome = np.array(ciphertext@B_inv.T %2, dtype='bool')
+    # syndrome = ciphertext.dot(B_inv.T) % 2
+    syndrome = np.array(ciphertext@B_inv.T % 2, dtype='bool')
     # Check if the syndrome is zero
     if not np.any(syndrome):
         return ciphertext
@@ -112,12 +209,12 @@ def decode_gallagher(ciphertext, B_inv, t):
         # Flip the corresponding bit in the error vector
         e[index] = 1
         # Update the syndrome
-        #syndrome = (syndrome + B_inv[:, index]) % 2
-        syndrome = np.array(syndrome@ B_inv[:, index]%2)*1
+        # syndrome = (syndrome + B_inv[:, index]) % 2
+        syndrome = np.array(syndrome @ B_inv[:, index] % 2)*1
         # Update the weight of the syndrome
         weight = np.count_nonzero(syndrome)
         print(syndrome)
-    return np.array(ciphertext + e %2, dtype='bool')*1
+    return np.array(ciphertext + e % 2, dtype='bool')*1
 
 
 # Starting input:
@@ -130,13 +227,13 @@ ciphertext = encrypt(9865443211, public_key)
 print(ciphertext, "cipher")
 
 # decrypt:
-#private_key = generate_private_key(public_key)
-#plaintext = decrypt(ciphertext, private_key)
-#print(plaintext)
+# private_key = generate_private_key(public_key)
+# plaintext = decrypt(ciphertext, private_key)
+# print(plaintext)
 
 # Example usage:
 t = 2
-#plaintext = decode_gallagher(ciphertext, np.transpose(public_key), t)
+plaintext = decode_gallagher(ciphertext, np.transpose(public_key), t)
 plaintext = decode_gallagher(ciphertext, public_key*-1, t)
 print(plaintext)
 
@@ -155,3 +252,5 @@ print(plaintext)
 # plt.ylabel('Running time (seconds)')
 # plt.title('Running time of decode_gallagher() function')
 # plt.show()
+
+print(__doc__)
