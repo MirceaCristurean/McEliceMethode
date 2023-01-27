@@ -7,7 +7,7 @@ There are some predefined steps:
     2. Message encryption;
     3. Message decryption.
 
-After running this code, we obtained a figure (Figure_1.png, please see Docs section of this repository) which perfectly displays an overview 
+After running this code, we obtained a figure (Figure_1.png), please see Docs section of this repository) which perfectly displays an overview 
 of the methods' performance.
 
 Note: This method is a post-quantum encryption candidate. A variant of this algorithm combined with NTS-KEM was entered into and selected
